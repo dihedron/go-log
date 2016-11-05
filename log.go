@@ -1,48 +1,53 @@
-package logger
+package log
 
 import (
 	"io/ioutil"
-	"log"
+	golog "log"
 	"os"
 	"strings"
 )
 
 var (
 	// DBG is the logger for messages at debug level.
-	DBG *log.Logger
+	DBG *golog.Logger
 	// INF is the logger for messages at informational level.
-	INF *log.Logger
+	INF *golog.Logger
 	// WRN is the logger for messages at warning level.
-	WRN *log.Logger
+	WRN *golog.Logger
 	// ERR is the logger for messages at error level.
-	ERR *log.Logger
+	ERR *golog.Logger
 )
 
-// Initialise sets up the logging facility.
-func Initialise(level string) {
+// SetLevel sets up the logger's level to the given value.
+func SetLevel(level string) {
 	//
 	// prepare the logging subsystem as per the command line
 	//
 	switch strings.ToUpper(level)[:1] {
 	case "D":
-		DBG = log.New(os.Stdout, "[D] ", log.Ldate|log.Ltime|log.Lshortfile)
-		INF = log.New(os.Stdout, "[I] ", log.Ldate|log.Ltime|log.Lshortfile)
-		WRN = log.New(os.Stdout, "[W] ", log.Ldate|log.Ltime|log.Lshortfile)
-		ERR = log.New(os.Stdout, "[E] ", log.Ldate|log.Ltime|log.Lshortfile)
+		DBG = golog.New(os.Stdout, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		INF = golog.New(os.Stdout, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		WRN = golog.New(os.Stdout, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		ERR = golog.New(os.Stdout, "[E] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 	case "I":
-		DBG = log.New(ioutil.Discard, "[D] ", log.Ldate|log.Ltime|log.Lshortfile)
-		INF = log.New(os.Stdout, "[I] ", log.Ldate|log.Ltime|log.Lshortfile)
-		WRN = log.New(os.Stdout, "[W] ", log.Ldate|log.Ltime|log.Lshortfile)
-		ERR = log.New(os.Stdout, "[E] ", log.Ldate|log.Ltime|log.Lshortfile)
+		DBG = golog.New(ioutil.Discard, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		INF = golog.New(os.Stdout, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		WRN = golog.New(os.Stdout, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		ERR = golog.New(os.Stdout, "[E] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 	case "W":
-		DBG = log.New(ioutil.Discard, "[D] ", log.Ldate|log.Ltime|log.Lshortfile)
-		INF = log.New(ioutil.Discard, "[I] ", log.Ldate|log.Ltime|log.Lshortfile)
-		WRN = log.New(os.Stdout, "[W] ", log.Ldate|log.Ltime|log.Lshortfile)
-		ERR = log.New(os.Stdout, "[E] ", log.Ldate|log.Ltime|log.Lshortfile)
+		DBG = golog.New(ioutil.Discard, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		INF = golog.New(ioutil.Discard, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		WRN = golog.New(os.Stdout, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		ERR = golog.New(os.Stdout, "[E] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 	case "E":
-		DBG = log.New(ioutil.Discard, "[D] ", log.Ldate|log.Ltime|log.Lshortfile)
-		INF = log.New(ioutil.Discard, "[I] ", log.Ldate|log.Ltime|log.Lshortfile)
-		WRN = log.New(ioutil.Discard, "[W] ", log.Ldate|log.Ltime|log.Lshortfile)
-		ERR = log.New(os.Stdout, "[E] ", log.Ldate|log.Ltime|log.Lshortfile)
+		DBG = golog.New(ioutil.Discard, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		INF = golog.New(ioutil.Discard, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		WRN = golog.New(ioutil.Discard, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
+		ERR = golog.New(os.Stdout, "[E] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 	}
+}
+
+func init() {
+	level := "Info"
+	SetLevel(level)
 }
