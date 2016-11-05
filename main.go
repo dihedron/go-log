@@ -18,28 +18,40 @@ var (
 	ERR *golog.Logger
 )
 
+var level = "Information"
+
+// GetLevel returns the current logging level.
+func GetLevel() string {
+	return level
+}
+
 // SetLevel sets up the logger's level to the given value.
-func SetLevel(level string) {
+func SetLevel(value string) {
+
 	//
 	// prepare the logging subsystem as per the command line
 	//
-	switch strings.ToUpper(level)[:1] {
+	switch strings.ToUpper(value)[:1] {
 	case "D":
+		level = "Debug"
 		DBG = golog.New(os.Stdout, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 		INF = golog.New(os.Stdout, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 		WRN = golog.New(os.Stdout, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 		ERR = golog.New(os.Stdout, "[E] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 	case "I":
+		level = "Information"
 		DBG = golog.New(ioutil.Discard, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 		INF = golog.New(os.Stdout, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 		WRN = golog.New(os.Stdout, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 		ERR = golog.New(os.Stdout, "[E] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 	case "W":
+		level = "Warning"
 		DBG = golog.New(ioutil.Discard, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 		INF = golog.New(ioutil.Discard, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 		WRN = golog.New(os.Stdout, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 		ERR = golog.New(os.Stdout, "[E] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 	case "E":
+		level = "Error"
 		DBG = golog.New(ioutil.Discard, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 		INF = golog.New(ioutil.Discard, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
 		WRN = golog.New(ioutil.Discard, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
@@ -48,6 +60,5 @@ func SetLevel(level string) {
 }
 
 func init() {
-	level := "Info"
 	SetLevel(level)
 }
