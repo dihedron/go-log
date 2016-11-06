@@ -28,9 +28,7 @@ func GetLevel() string {
 // SetLevel sets up the logger's level to the given value.
 func SetLevel(value string) {
 
-	//
-	// prepare the logging subsystem as per the command line
-	//
+	// initialise the logger streams as per the input parameter
 	switch strings.ToUpper(value)[:1] {
 	case "D":
 		level = "Debug"
@@ -59,6 +57,7 @@ func SetLevel(value string) {
 	}
 }
 
+// init simply sets the logging level to the default value.
 func init() {
 	SetLevel(level)
 }
