@@ -18,8 +18,13 @@ func main() {
 	log.SetColorise(true)
 	log.SetPrintCallerInfo(true)
 	log.SetPrintSourceInfo(true)
+	log.Debugf("debug message")
+	log.Infof("info message")
+	log.Warnf("warn message")
+	log.Errorf("error message")
+	// TODO: fix the bug with format on *ln
 	log.Debugln("debug message")
 	log.Infoln("info message")
 	log.Warnln("warn message")
-	log.Warnln("error message")
+	log.Errorln("error message")
 }

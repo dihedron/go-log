@@ -51,7 +51,7 @@ const (
 
 // FunctionWidth represents the maximum width of the function name width in
 // logging messages.
-const FunctionWidth int = 32
+//const FunctionWidth int = 32
 
 // String returns a string representation of the log level for use in traces.
 func (l Level) String() string {
@@ -239,11 +239,11 @@ func IsDisabled() bool {
 	return GetLevel() <= NUL
 }
 
-// Debugln writes a debug message to the current output stream,
-// appending a new line.
+// Debugln writes a debug message to the current output stream, appending a new
+// line.
 func Debugln(args ...interface{}) (int, error) {
 	if IsDebug() {
-		_, args = prepareFormatAndArgs(DBG, FunctionWidth, "", args)
+		_, args = prepareFormatAndArgs(DBG, "", args)
 		return logDebugln(GetStream(), args...)
 	}
 	return 0, nil
@@ -253,27 +253,27 @@ func Debugln(args ...interface{}) (int, error) {
 // appending a new line.
 func Infoln(args ...interface{}) (int, error) {
 	if IsInfo() {
-		_, args = prepareFormatAndArgs(INF, FunctionWidth, "", args)
+		_, args = prepareFormatAndArgs(INF, "", args)
 		return logInfoln(GetStream(), args...)
 	}
 	return 0, nil
 }
 
-// Warnln writes a warning message to the current output stream,
-// appending a new line.
+// Warnln writes a warning message to the current output stream, appending a new
+// line.
 func Warnln(args ...interface{}) (int, error) {
 	if IsWarning() {
-		_, args = prepareFormatAndArgs(WRN, FunctionWidth, "", args)
+		_, args = prepareFormatAndArgs(WRN, "", args)
 		return logWarnln(GetStream(), args...)
 	}
 	return 0, nil
 }
 
-// Errorln writes an error message to the current output stream,
-// appending a new line.
+// Errorln writes an error message to the current output stream, appending a new
+// line.
 func Errorln(args ...interface{}) (int, error) {
 	if IsError() {
-		_, args = prepareFormatAndArgs(ERR, FunctionWidth, "", args)
+		_, args = prepareFormatAndArgs(ERR, "", args)
 		return logErrorln(GetStream(), args...)
 	}
 	return 0, nil
@@ -283,7 +283,7 @@ func Errorln(args ...interface{}) (int, error) {
 // appending a new line.
 func Debugf(format string, args ...interface{}) (int, error) {
 	if IsDebug() {
-		format, args = prepareFormatAndArgs(DBG, FunctionWidth, format, args...)
+		format, args = prepareFormatAndArgs(DBG, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -296,7 +296,7 @@ func Debugf(format string, args ...interface{}) (int, error) {
 // appending a new line.
 func Infof(format string, args ...interface{}) (int, error) {
 	if IsInfo() {
-		format, args = prepareFormatAndArgs(INF, FunctionWidth, format, args...)
+		format, args = prepareFormatAndArgs(INF, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -309,7 +309,7 @@ func Infof(format string, args ...interface{}) (int, error) {
 // appending a new line.
 func Warnf(format string, args ...interface{}) (int, error) {
 	if IsWarning() {
-		format, args = prepareFormatAndArgs(WRN, FunctionWidth, format, args...)
+		format, args = prepareFormatAndArgs(WRN, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -322,7 +322,7 @@ func Warnf(format string, args ...interface{}) (int, error) {
 // appending a new line.
 func Errorf(format string, args ...interface{}) (int, error) {
 	if IsError() {
-		format, args = prepareFormatAndArgs(ERR, FunctionWidth, format, args...)
+		format, args = prepareFormatAndArgs(ERR, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -372,7 +372,7 @@ func Printf(format string, args ...interface{}) (int, error) {
 	return fmt.Fprintf(GetStream(), format, args...)
 }
 
-func prepareFormatAndArgs(level Level, length int, format string, args ...interface{}) (string, []interface{}) {
+func prepareFormatAndArgs(level Level, format string, args ...interface{}) (string, []interface{}) {
 
 	leadFormat := "%s %s - "
 	tailFormat := ""
@@ -384,22 +384,19 @@ func prepareFormatAndArgs(level Level, length int, format string, args ...interf
 		var line int
 		pc, file, line, ok := runtime.Caller(2)
 		if !ok {
-			fun = "<unknown function>"
-			file = "<unknown source>"
-			line = 0
+			fun = "<unknown>"
+			file = "???"
+			line = -1
 		} else {
 			if GetPrintCallerInfo() {
 				f := runtime.FuncForPC(pc)
 				if f == nil {
-					fun = "<unknown function>"
+					fun = "<unknown>"
 				} else {
 					fun = f.Name()
 				}
 				fun = fun[strings.LastIndex(fun, "/")+1:]
-				if len(fun) >= 3 && len(fun) > length {
-					fun = "..." + fun[len(fun)-length+3:]
-				}
-				leadFormat = fmt.Sprintf("%s%%-%ds: ", leadFormat, length)
+				leadFormat = leadFormat + "%s: "
 				leadArgs = append(leadArgs, fun)
 			}
 			if GetPrintSourceInfo() {
@@ -408,8 +405,11 @@ func prepareFormatAndArgs(level Level, length int, format string, args ...interf
 			}
 		}
 	}
-	format = fmt.Sprintf("%s%s%s", leadFormat, format, tailFormat)
+	//format = fmt.Sprintf("%s%s%s", leadFormat, format, tailFormat)
+	format = leadFormat + format + tailFormat
 	args = append(leadArgs, append(args, tailArgs...)...)
+	fmt.Println(format)
+	fmt.Println(args)
 	return format, args
 }
 
