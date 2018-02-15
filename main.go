@@ -1,63 +1,25 @@
-package log
+// Copyright 2017-present Andrea Funtò. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
+package main
 
 import (
-	"io/ioutil"
-	golog "log"
 	"os"
-	"strings"
+
+	"github.com/dihedron/go-log/log"
 )
 
-var (
-	// DBG is the logger for messages at debug level.
-	DBG *golog.Logger
-	// INF is the logger for messages at informational level.
-	INF *golog.Logger
-	// WRN is the logger for messages at warning level.
-	WRN *golog.Logger
-	// ERR is the logger for messages at error level.
-	ERR *golog.Logger
-)
+func main() {
 
-var level = "Information"
-
-// GetLevel returns the current logging level.
-func GetLevel() string {
-	return level
-}
-
-// SetLevel sets up the logger's level to the given value.
-func SetLevel(value string) {
-
-	// initialise the logger streams as per the input parameter
-	switch strings.ToUpper(value)[:1] {
-	case "D":
-		level = "Debug"
-		DBG = golog.New(os.Stdout, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		INF = golog.New(os.Stdout, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		WRN = golog.New(os.Stdout, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		ERR = golog.New(os.Stdout, "[E] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-	case "I":
-		level = "Information"
-		DBG = golog.New(ioutil.Discard, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		INF = golog.New(os.Stdout, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		WRN = golog.New(os.Stdout, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		ERR = golog.New(os.Stdout, "[E] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-	case "W":
-		level = "Warning"
-		DBG = golog.New(ioutil.Discard, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		INF = golog.New(ioutil.Discard, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		WRN = golog.New(os.Stdout, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		ERR = golog.New(os.Stdout, "[E] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-	case "E":
-		level = "Error"
-		DBG = golog.New(ioutil.Discard, "[D] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		INF = golog.New(ioutil.Discard, "[I] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		WRN = golog.New(ioutil.Discard, "[W] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-		ERR = golog.New(os.Stdout, "[E] ", golog.Ldate|golog.Ltime|golog.Lshortfile)
-	}
-}
-
-// init simply sets the logging level to the default value.
-func init() {
-	SetLevel(level)
+	log.SetLevel(log.DBG)
+	log.SetStream(os.Stdout)
+	log.SetTimeFormat("15:04:05.000")
+	log.SetColorise(true)
+	log.SetPrintCallerInfo(true)
+	log.SetPrintSourceInfo(true)
+	log.Debugln("debug message")
+	log.Infoln("info message")
+	log.Warnln("warn message")
+	log.Warnln("error message")
 }
