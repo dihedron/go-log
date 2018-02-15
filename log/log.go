@@ -408,8 +408,6 @@ func prepareFormatAndArgs(level Level, format string, args ...interface{}) (stri
 	//format = fmt.Sprintf("%s%s%s", leadFormat, format, tailFormat)
 	format = leadFormat + format + tailFormat
 	args = append(leadArgs, append(args, tailArgs...)...)
-	fmt.Println(format)
-	fmt.Println(args)
 	return format, args
 }
 
