@@ -17,13 +17,13 @@ func main() {
 	log.SetTimeFormat("15:04:05.000")
 	log.SetColorise(true)
 	log.SetPrintCallerInfo(true)
-	log.SetPrintSourceInfo(true)
+	log.SetPrintSourceInfo(log.SourceInfoShort)
+
 	log.Debugf("debug message")
 	log.Infof("info message")
 	log.Warnf("warn message")
 	log.Errorf("error message")
-	// TODO: fix the bug with format on *ln
-	log.Debugf("----------------------------------")
+
 	log.Debugln("debug message", "a", "b", "c")
 	log.Infoln("info message")
 	log.Warnln("warn message")

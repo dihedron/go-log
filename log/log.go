@@ -74,6 +74,18 @@ type logln func(writer io.Writer, args ...interface{}) (int, error)
 // logf is the prototype of log functions writing a formatted output to a stream.
 type logf func(writer io.Writer, format string, args ...interface{}) (int, error)
 
+const (
+	// SourceInfoNone is the constant that specifies that no source file information
+	// (file and line) should be printed out.
+	SourceInfoNone int8 = iota
+	// SourceInfoShort is the constants that specifies that the source file
+	// information should be printed in short form (file name only).
+	SourceInfoShort
+	// SourceInfoLong is the constants that specifies that the source file
+	// information should be printed in log form (complete file path).
+	SourceInfoLong
+)
+
 var (
 	logLevel               Level
 	logLevelLock           sync.RWMutex
@@ -83,7 +95,7 @@ var (
 	logTimeFormatLock      sync.RWMutex
 	logColorise            bool
 	logColoriseLock        sync.RWMutex
-	logPrintSourceInfo     bool
+	logPrintSourceInfo     int8
 	logPrintSourceInfoLock sync.RWMutex
 	logPrintCallerInfo     bool
 	logPrintCallerInfoLock sync.RWMutex
@@ -107,7 +119,7 @@ func init() {
 		SetColorise(true)
 	}
 	SetPrintCallerInfo(true)
-	SetPrintSourceInfo(true)
+	SetPrintSourceInfo(SourceInfoShort)
 }
 
 // SetLevel sets the log level for the application.
@@ -198,17 +210,19 @@ func GetPrintCallerInfo() bool {
 }
 
 // SetPrintSourceInfo enables or disables the automatic addition of the source
-// and line number info to the log messages. NOTE: enabling this feature can
+// and line number info to the log messages; use one among SourceFileNone,
+// SourceFileShort and SourceFileLong here. NOTE: enabling this feature can
 // have severe impacts on performances since it uses reflection at runtime.
-func SetPrintSourceInfo(enabled bool) {
+func SetPrintSourceInfo(value int8) {
 	logPrintSourceInfoLock.Lock()
 	defer logPrintSourceInfoLock.Unlock()
-	logPrintSourceInfo = enabled
+	logPrintSourceInfo = value
 }
 
 // GetPrintSourceInfo returns whether the automatic addition of the source and
-// line number info to the log messages is enabled.
-func GetPrintSourceInfo() bool {
+// line number info to the log messages is enabled, and whether the file name
+// will be printed in short or long form.
+func GetPrintSourceInfo() int8 {
 	logPrintSourceInfoLock.RLock()
 	defer logPrintSourceInfoLock.RUnlock()
 	return logPrintSourceInfo
@@ -379,7 +393,7 @@ func prepareFormatAndArgsf(level Level, format string, args ...interface{}) (str
 	leadArgs := []interface{}{level.String(), time.Now().Format(GetTimeFormat())}
 	tailArgs := []interface{}{}
 
-	if GetPrintCallerInfo() || GetPrintSourceInfo() {
+	if GetPrintCallerInfo() || GetPrintSourceInfo() > 0 {
 		var fun, file string
 		var line int
 		pc, file, line, ok := runtime.Caller(2)
@@ -399,11 +413,22 @@ func prepareFormatAndArgsf(level Level, format string, args ...interface{}) (str
 				leadFormat = leadFormat + "%s: "
 				leadArgs = append(leadArgs, fun)
 			}
-			if GetPrintSourceInfo() {
-				file := file[strings.LastIndex(file, "/")+1:]
+			switch GetPrintSourceInfo() {
+			case SourceInfoShort:
+				file = file[strings.LastIndex(file, "/")+1:]
+				fallthrough
+				// tailFormat = " (%s:%d)"
+				// tailArgs = append(tailArgs, []interface{}{file, line}...)
+			case SourceInfoLong:
 				tailFormat = " (%s:%d)"
 				tailArgs = append(tailArgs, []interface{}{file, line}...)
+			default:
 			}
+			// if GetPrintSourceInfo() > 0 {
+			// 	file := file[strings.LastIndex(file, "/")+1:]
+			// 	tailFormat = " (%s:%d)"
+			// 	tailArgs = append(tailArgs, []interface{}{file, line}...)
+			// }
 		}
 	}
 	format = leadFormat + format + tailFormat
@@ -414,7 +439,7 @@ func prepareFormatAndArgsf(level Level, format string, args ...interface{}) (str
 func prepareFormatAndArgsln(level Level, args ...interface{}) []interface{} {
 
 	list := []interface{}{fmt.Sprintf("%s %s - ", level.String(), time.Now().Format(GetTimeFormat()))}
-	if GetPrintCallerInfo() || GetPrintSourceInfo() {
+	if GetPrintCallerInfo() || GetPrintSourceInfo() > 0 {
 		var fun, file string
 		var line int
 		pc, file, line, ok := runtime.Caller(2)
@@ -433,10 +458,18 @@ func prepareFormatAndArgsln(level Level, args ...interface{}) []interface{} {
 				fun = fun[strings.LastIndex(fun, "/")+1:]
 				list = append(list, fmt.Sprintf("%s:", fun))
 			}
-			if GetPrintSourceInfo() {
-				file := file[strings.LastIndex(file, "/")+1:]
+			switch GetPrintSourceInfo() {
+			case SourceInfoShort:
+				file = file[strings.LastIndex(file, "/")+1:]
+				fallthrough
+			case SourceInfoLong:
 				args = append(args, fmt.Sprintf("(%s:%d)", file, line))
+			default:
 			}
+			// if GetPrintSourceInfo() {
+			// 	file := file[strings.LastIndex(file, "/")+1:]
+			// 	args = append(args, fmt.Sprintf("(%s:%d)", file, line))
+			// }
 		}
 	}
 	args = append(list, args...)
