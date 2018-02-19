@@ -257,7 +257,7 @@ func IsDisabled() bool {
 // line.
 func Debugln(args ...interface{}) (int, error) {
 	if IsDebug() {
-		args = prepareFormatAndArgsln(DBG, args...)
+		args = prepareArgs(DBG, args...)
 		return logDebugln(GetStream(), args...)
 	}
 	return 0, nil
@@ -267,7 +267,7 @@ func Debugln(args ...interface{}) (int, error) {
 // appending a new line.
 func Infoln(args ...interface{}) (int, error) {
 	if IsInfo() {
-		args = prepareFormatAndArgsln(INF, args...)
+		args = prepareArgs(INF, args...)
 		return logInfoln(GetStream(), args...)
 	}
 	return 0, nil
@@ -277,7 +277,7 @@ func Infoln(args ...interface{}) (int, error) {
 // line.
 func Warnln(args ...interface{}) (int, error) {
 	if IsWarning() {
-		args = prepareFormatAndArgsln(WRN, args...)
+		args = prepareArgs(WRN, args...)
 		return logWarnln(GetStream(), args...)
 	}
 	return 0, nil
@@ -287,7 +287,7 @@ func Warnln(args ...interface{}) (int, error) {
 // line.
 func Errorln(args ...interface{}) (int, error) {
 	if IsError() {
-		args = prepareFormatAndArgsln(ERR, args...)
+		args = prepareArgs(ERR, args...)
 		return logErrorln(GetStream(), args...)
 	}
 	return 0, nil
@@ -297,7 +297,7 @@ func Errorln(args ...interface{}) (int, error) {
 // appending a new line.
 func Debugf(format string, args ...interface{}) (int, error) {
 	if IsDebug() {
-		format, args = prepareFormatAndArgsf(DBG, format, args...)
+		format, args = prepareFormatAndArgs(DBG, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -310,7 +310,7 @@ func Debugf(format string, args ...interface{}) (int, error) {
 // appending a new line.
 func Infof(format string, args ...interface{}) (int, error) {
 	if IsInfo() {
-		format, args = prepareFormatAndArgsf(INF, format, args...)
+		format, args = prepareFormatAndArgs(INF, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -323,7 +323,7 @@ func Infof(format string, args ...interface{}) (int, error) {
 // appending a new line.
 func Warnf(format string, args ...interface{}) (int, error) {
 	if IsWarning() {
-		format, args = prepareFormatAndArgsf(WRN, format, args...)
+		format, args = prepareFormatAndArgs(WRN, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -332,11 +332,11 @@ func Warnf(format string, args ...interface{}) (int, error) {
 	return 0, nil
 }
 
-// Errorf writes an error message to the current output stream,
-// appending a new line.
+// Errorf writes an error message to the current output stream, appending a new
+// line.
 func Errorf(format string, args ...interface{}) (int, error) {
 	if IsError() {
-		format, args = prepareFormatAndArgsf(ERR, format, args...)
+		format, args = prepareFormatAndArgs(ERR, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -345,10 +345,10 @@ func Errorf(format string, args ...interface{}) (int, error) {
 	return 0, nil
 }
 
-// Println is a raw version of the debug functions; it tries to interpret
-// the message by checking if it starts with anthing like "[D]" or "[W]";
-// if so, it delegates to the corresponding logging function, otherwise it
-// just prints to the log stream as is, with no additional formatting.
+// Println is a raw version of the debug functions; it tries to interpret the
+// message by checking if it starts with anthing like "[D]" or "[W]"; if so, it
+// delegates to the corresponding logging function, otherwise it just prints to
+// the log stream as is, with no additional formatting.
 func Println(args ...interface{}) (int, error) {
 	if len(args) > 0 {
 		if value, ok := args[0].(string); ok {
@@ -367,10 +367,10 @@ func Println(args ...interface{}) (int, error) {
 	return fmt.Fprintln(GetStream(), args...)
 }
 
-// Printf is a raw version of the debug functions; it tries to interpret
-// the message by checking if it starts with anything like "[D]" or "[W]";
-// if so, it delegates to the corresponding logging function, otherwise it
-// just prints to the log stream as is, with no additional formatting.
+// Printf is a raw version of the debug functions; it tries to interpret the
+// message by checking if it starts with anything like "[D]" or "[W]"; if so, it
+// delegates to the corresponding logging function, otherwise it just prints to
+// the log stream as is, with no additional formatting.
 func Printf(format string, args ...interface{}) (int, error) {
 	re := regexp.MustCompile(`^\[(D|I|W|E)\]\s`)
 	switch {
@@ -386,7 +386,10 @@ func Printf(format string, args ...interface{}) (int, error) {
 	return fmt.Fprintf(GetStream(), format, args...)
 }
 
-func prepareFormatAndArgsf(level Level, format string, args ...interface{}) (string, []interface{}) {
+// prepareFormatAndArgs prepares the format and args array for logf, depending
+// on the active runtime logging options (e.g. caller function, source file and
+// line number).
+func prepareFormatAndArgs(level Level, format string, args ...interface{}) (string, []interface{}) {
 
 	leadFormat := "%s %s - "
 	tailFormat := ""
@@ -424,11 +427,6 @@ func prepareFormatAndArgsf(level Level, format string, args ...interface{}) (str
 				tailArgs = append(tailArgs, []interface{}{file, line}...)
 			default:
 			}
-			// if GetPrintSourceInfo() > 0 {
-			// 	file := file[strings.LastIndex(file, "/")+1:]
-			// 	tailFormat = " (%s:%d)"
-			// 	tailArgs = append(tailArgs, []interface{}{file, line}...)
-			// }
 		}
 	}
 	format = leadFormat + format + tailFormat
@@ -436,7 +434,10 @@ func prepareFormatAndArgsf(level Level, format string, args ...interface{}) (str
 	return format, args
 }
 
-func prepareFormatAndArgsln(level Level, args ...interface{}) []interface{} {
+// prepareArgs prepares the aray of args for logln , depending on the active
+// runtime logging options (e.g. caller function, source file and line number);
+// it is similar to prepareFormatAndArgs but logln does not require a format.
+func prepareArgs(level Level, args ...interface{}) []interface{} {
 
 	list := []interface{}{fmt.Sprintf("%s %s - ", level.String(), time.Now().Format(GetTimeFormat()))}
 	if GetPrintCallerInfo() || GetPrintSourceInfo() > 0 {
@@ -466,10 +467,6 @@ func prepareFormatAndArgsln(level Level, args ...interface{}) []interface{} {
 				args = append(args, fmt.Sprintf("(%s:%d)", file, line))
 			default:
 			}
-			// if GetPrintSourceInfo() {
-			// 	file := file[strings.LastIndex(file, "/")+1:]
-			// 	args = append(args, fmt.Sprintf("(%s:%d)", file, line))
-			// }
 		}
 	}
 	args = append(list, args...)
