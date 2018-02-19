@@ -24,8 +24,19 @@ func main() {
 	log.Warnf("warn message")
 	log.Errorf("error message")
 
+	log.Debugf("debug message with newline\n")
+	log.Infof("info message with newline\n")
+	log.Warnf("warn message with newline\n")
+	log.Errorf("error message with newline\n")
+
 	log.Debugln("debug message", "a", "b", "c")
 	log.Infoln("info message")
 	log.Warnln("warn message")
 	log.Errorln("error message")
+
+	log.Debugln("debug message", "a", "b", "c", "with newline\n")
+	log.Infoln("info message with newline\n")
+	log.Warnln("warn message with newline\n")
+	log.Errorln("error message with newline\n")
+
 }

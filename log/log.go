@@ -425,6 +425,7 @@ func prepareFormatAndArgs(level Level, format string, args ...interface{}) (stri
 			case SourceInfoLong:
 				tailFormat = " (%s:%d)"
 				tailArgs = append(tailArgs, []interface{}{file, line}...)
+				format = strings.TrimSuffix(format, "\n")
 			default:
 			}
 		}
@@ -464,6 +465,8 @@ func prepareArgs(level Level, args ...interface{}) []interface{} {
 				file = file[strings.LastIndex(file, "/")+1:]
 				fallthrough
 			case SourceInfoLong:
+				last := strings.TrimSuffix(fmt.Sprintf("%v", args[len(args)-1]), "\n")
+				args = append(args[:len(args)-1], last)
 				args = append(args, fmt.Sprintf("(%s:%d)", file, line))
 			default:
 			}
