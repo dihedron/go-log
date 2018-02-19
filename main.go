@@ -23,7 +23,8 @@ func main() {
 	log.Warnf("warn message")
 	log.Errorf("error message")
 	// TODO: fix the bug with format on *ln
-	log.Debugln("debug message")
+	log.Debugf("----------------------------------")
+	log.Debugln("debug message", "a", "b", "c")
 	log.Infoln("info message")
 	log.Warnln("warn message")
 	log.Errorln("error message")

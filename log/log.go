@@ -243,7 +243,7 @@ func IsDisabled() bool {
 // line.
 func Debugln(args ...interface{}) (int, error) {
 	if IsDebug() {
-		_, args = prepareFormatAndArgs(DBG, "", args)
+		args = prepareFormatAndArgsln(DBG, args...)
 		return logDebugln(GetStream(), args...)
 	}
 	return 0, nil
@@ -253,7 +253,7 @@ func Debugln(args ...interface{}) (int, error) {
 // appending a new line.
 func Infoln(args ...interface{}) (int, error) {
 	if IsInfo() {
-		_, args = prepareFormatAndArgs(INF, "", args)
+		args = prepareFormatAndArgsln(INF, args...)
 		return logInfoln(GetStream(), args...)
 	}
 	return 0, nil
@@ -263,7 +263,7 @@ func Infoln(args ...interface{}) (int, error) {
 // line.
 func Warnln(args ...interface{}) (int, error) {
 	if IsWarning() {
-		_, args = prepareFormatAndArgs(WRN, "", args)
+		args = prepareFormatAndArgsln(WRN, args...)
 		return logWarnln(GetStream(), args...)
 	}
 	return 0, nil
@@ -273,7 +273,7 @@ func Warnln(args ...interface{}) (int, error) {
 // line.
 func Errorln(args ...interface{}) (int, error) {
 	if IsError() {
-		_, args = prepareFormatAndArgs(ERR, "", args)
+		args = prepareFormatAndArgsln(ERR, args...)
 		return logErrorln(GetStream(), args...)
 	}
 	return 0, nil
@@ -283,7 +283,7 @@ func Errorln(args ...interface{}) (int, error) {
 // appending a new line.
 func Debugf(format string, args ...interface{}) (int, error) {
 	if IsDebug() {
-		format, args = prepareFormatAndArgs(DBG, format, args...)
+		format, args = prepareFormatAndArgsf(DBG, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -296,7 +296,7 @@ func Debugf(format string, args ...interface{}) (int, error) {
 // appending a new line.
 func Infof(format string, args ...interface{}) (int, error) {
 	if IsInfo() {
-		format, args = prepareFormatAndArgs(INF, format, args...)
+		format, args = prepareFormatAndArgsf(INF, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -309,7 +309,7 @@ func Infof(format string, args ...interface{}) (int, error) {
 // appending a new line.
 func Warnf(format string, args ...interface{}) (int, error) {
 	if IsWarning() {
-		format, args = prepareFormatAndArgs(WRN, format, args...)
+		format, args = prepareFormatAndArgsf(WRN, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -322,7 +322,7 @@ func Warnf(format string, args ...interface{}) (int, error) {
 // appending a new line.
 func Errorf(format string, args ...interface{}) (int, error) {
 	if IsError() {
-		format, args = prepareFormatAndArgs(ERR, format, args...)
+		format, args = prepareFormatAndArgsf(ERR, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -372,7 +372,7 @@ func Printf(format string, args ...interface{}) (int, error) {
 	return fmt.Fprintf(GetStream(), format, args...)
 }
 
-func prepareFormatAndArgs(level Level, format string, args ...interface{}) (string, []interface{}) {
+func prepareFormatAndArgsf(level Level, format string, args ...interface{}) (string, []interface{}) {
 
 	leadFormat := "%s %s - "
 	tailFormat := ""
@@ -400,15 +400,47 @@ func prepareFormatAndArgs(level Level, format string, args ...interface{}) (stri
 				leadArgs = append(leadArgs, fun)
 			}
 			if GetPrintSourceInfo() {
+				file := file[strings.LastIndex(file, "/")+1:]
 				tailFormat = " (%s:%d)"
 				tailArgs = append(tailArgs, []interface{}{file, line}...)
 			}
 		}
 	}
-	//format = fmt.Sprintf("%s%s%s", leadFormat, format, tailFormat)
 	format = leadFormat + format + tailFormat
 	args = append(leadArgs, append(args, tailArgs...)...)
 	return format, args
+}
+
+func prepareFormatAndArgsln(level Level, args ...interface{}) []interface{} {
+
+	list := []interface{}{fmt.Sprintf("%s %s - ", level.String(), time.Now().Format(GetTimeFormat()))}
+	if GetPrintCallerInfo() || GetPrintSourceInfo() {
+		var fun, file string
+		var line int
+		pc, file, line, ok := runtime.Caller(2)
+		if !ok {
+			fun = "<unknown>"
+			file = "???"
+			line = -1
+		} else {
+			if GetPrintCallerInfo() {
+				f := runtime.FuncForPC(pc)
+				if f == nil {
+					fun = "<unknown>"
+				} else {
+					fun = f.Name()
+				}
+				fun = fun[strings.LastIndex(fun, "/")+1:]
+				list = append(list, fmt.Sprintf("%s:", fun))
+			}
+			if GetPrintSourceInfo() {
+				file := file[strings.LastIndex(file, "/")+1:]
+				args = append(args, fmt.Sprintf("(%s:%d)", file, line))
+			}
+		}
+	}
+	args = append(list, args...)
+	return args
 }
 
 // ToJSON converts an object into pretty-printed JSON format.
