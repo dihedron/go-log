@@ -134,12 +134,11 @@ func GetLevel() Level {
 // SetStream sets the stream to write messages to; if the colorise flag is set,
 // the logger will wrap the stream so it always produces properly coloured output
 // messages; this might be less appropriate when writing to a file.
-func SetStream(stream *os.File, colorise bool) {
+func SetStream(stream io.Writer, colorise bool) {
 	logStreamLock.Lock()
 	defer logStreamLock.Unlock()
-	if colorise {
+	if stream, ok := stream.(*os.File); colorise && ok {
 		logStream = colorable.NewColorable(stream)
-		colorable.NewColorableStdout()
 		logDebugf = color.New(color.FgWhite).Fprintf
 		logInfof = color.New(color.FgGreen).Fprintf
 		logWarnf = color.New(color.FgYellow).Fprintf
