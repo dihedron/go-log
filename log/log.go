@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattn/go-colorable"
+
 	"github.com/fatih/color"
 )
 
@@ -93,8 +95,6 @@ var (
 	logStreamLock          sync.RWMutex
 	logTimeFormat          string
 	logTimeFormatLock      sync.RWMutex
-	logColorise            bool
-	logColoriseLock        sync.RWMutex
 	logPrintSourceInfo     int8
 	logPrintSourceInfoLock sync.RWMutex
 	logPrintCallerInfo     bool
@@ -111,13 +111,8 @@ var (
 
 func init() {
 	SetLevel(DBG)
-	SetStream(os.Stderr)
+	SetStream(os.Stderr, true)
 	SetTimeFormat("2006-01-02@15:04:05.000")
-	if runtime.GOOS == "windows" {
-		SetColorise(false)
-	} else {
-		SetColorise(true)
-	}
 	SetPrintCallerInfo(true)
 	SetPrintSourceInfo(SourceInfoShort)
 }
@@ -136,11 +131,34 @@ func GetLevel() Level {
 	return logLevel
 }
 
-// SetStream sets the stream to write messages to.
-func SetStream(stream io.Writer) {
+// SetStream sets the stream to write messages to; if the colorise flag is set,
+// the logger will wrap the stream so it always produces properly coloured output
+// messages; this might be less appropriate when writing to a file.
+func SetStream(stream *os.File, colorise bool) {
 	logStreamLock.Lock()
 	defer logStreamLock.Unlock()
-	logStream = stream
+	if colorise {
+		logStream = colorable.NewColorable(stream)
+		colorable.NewColorableStdout()
+		logDebugf = color.New(color.FgWhite).Fprintf
+		logInfof = color.New(color.FgGreen).Fprintf
+		logWarnf = color.New(color.FgYellow).Fprintf
+		logErrorf = color.New(color.FgRed).Fprintf
+		logDebugln = color.New(color.FgWhite).Fprintln
+		logInfoln = color.New(color.FgGreen).Fprintln
+		logWarnln = color.New(color.FgYellow).Fprintln
+		logErrorln = color.New(color.FgRed).Fprintln
+	} else {
+		logStream = stream
+		logDebugf = fmt.Fprintf
+		logInfof = fmt.Fprintf
+		logWarnf = fmt.Fprintf
+		logErrorf = fmt.Fprintf
+		logDebugln = fmt.Fprintln
+		logInfoln = fmt.Fprintln
+		logWarnln = fmt.Fprintln
+		logErrorln = fmt.Fprintln
+	}
 }
 
 // GetStream returns the current log stream.
@@ -162,34 +180,6 @@ func GetTimeFormat() string {
 	logTimeFormatLock.RLock()
 	defer logTimeFormatLock.RUnlock()
 	return logTimeFormat
-}
-
-// SetColorise enables or disables the colouring of the log messages according
-// to their severity. By default this is disabled on Windows and enabled on *NIX
-// systems; this function is the way to toggle it.
-func SetColorise(enabled bool) {
-	logColoriseLock.Lock()
-	defer logColoriseLock.Unlock()
-	if enabled {
-		logDebugf = color.New(color.FgWhite).Fprintf
-		logInfof = color.New(color.FgGreen).Fprintf
-		logWarnf = color.New(color.FgYellow).Fprintf
-		logErrorf = color.New(color.FgRed).Fprintf
-		logDebugln = color.New(color.FgWhite).Fprintln
-		logInfoln = color.New(color.FgGreen).Fprintln
-		logWarnln = color.New(color.FgYellow).Fprintln
-		logErrorln = color.New(color.FgRed).Fprintln
-	} else if !enabled {
-		logDebugf = fmt.Fprintf
-		logInfof = fmt.Fprintf
-		logWarnf = fmt.Fprintf
-		logErrorf = fmt.Fprintf
-		logDebugln = fmt.Fprintln
-		logInfoln = fmt.Fprintln
-		logWarnln = fmt.Fprintln
-		logErrorln = fmt.Fprintln
-	}
-	logColorise = enabled
 }
 
 // SetPrintCallerInfo enables or disables the automatic addition of the calling
@@ -440,7 +430,7 @@ func prepareFormatAndArgs(level Level, format string, args ...interface{}) (stri
 // it is similar to prepareFormatAndArgs but logln does not require a format.
 func prepareArgs(level Level, args ...interface{}) []interface{} {
 
-	list := []interface{}{fmt.Sprintf("%s %s - ", level.String(), time.Now().Format(GetTimeFormat()))}
+	list := []interface{}{fmt.Sprintf("%s %s -", level.String(), time.Now().Format(GetTimeFormat()))}
 	if GetPrintCallerInfo() || GetPrintSourceInfo() > 0 {
 		var fun, file string
 		var line int

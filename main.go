@@ -13,9 +13,8 @@ import (
 func main() {
 
 	log.SetLevel(log.DBG)
-	log.SetStream(os.Stdout)
+	log.SetStream(os.Stdout, true)
 	log.SetTimeFormat("15:04:05.000")
-	log.SetColorise(true)
 	log.SetPrintCallerInfo(true)
 	log.SetPrintSourceInfo(log.SourceInfoShort)
 
@@ -38,5 +37,11 @@ func main() {
 	log.Infoln("info message with newline\n")
 	log.Warnln("warn message with newline\n")
 	log.Errorln("error message with newline\n")
+
+	log.SetStream(os.Stdout, false)
+	log.Debugln("debug message", "a", "b", "c", "no colour")
+	log.Infoln("info message with newline", "no colour")
+	log.Warnln("warn message with newline", "no colour")
+	log.Errorln("error message with newline", "no colour")
 
 }
