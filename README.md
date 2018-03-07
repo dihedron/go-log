@@ -26,7 +26,14 @@ where ```log.SetLevel()``` sets the current logging level to one of ```log.DBG``
 
 ```log.SetPrintCallerInfo()``` instructs the logger to write the name of the calling method before the message; the name is retrieved at runtime by walking the stack, so it is quite cumbersome and can result in a significant slowdown.  
 
-```log.SetPrintSourceInfo()``` instructs the logger to print the name of the file (```log.SourceInfoShort```) or the full path (```log.SourceInfoLong```) and the line number of the call site. Also this information is retrieved at runtime by walking the stack and can be quite cumbersome: use sparingly!
+```log.SetPrintSourceInfo()``` instructs the logger to print the name of the file (```log.SourceInfoShort```) or the full path (```log.SourceInfoLong```) and the line number of the call site. Also this information is retrieved at runtime by walking the stack and can be quite cumbersome: use sparingly!  
+
+To actually log messages, you can use two families of functions which follow the ```fmt.Printf``` and ```fmt.Println``` usage patterns, e.g.:
+``` golang
+log.Errorf("this is an error message: %v", err)
+
+log.Infoln("this is an informational message")
+```
 
 ## License
 
