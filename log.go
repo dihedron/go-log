@@ -282,6 +282,16 @@ func Errorln(args ...interface{}) (int, error) {
 	return 0, nil
 }
 
+// Fatalln writes an error message to the current output stream, appending a new
+// line; then it aborts the program by calling os.Exit(1).
+func Fatalln(args ...interface{}) {
+	if IsError() {
+		args = prepareArgs(ERR, args...)
+		logErrorln(GetStream(), args...)
+	}
+	os.Exit(1)
+}
+
 // Debugf writes a debug message to the current output stream,
 // appending a new line.
 func Debugf(format string, args ...interface{}) (int, error) {
@@ -332,6 +342,19 @@ func Errorf(format string, args ...interface{}) (int, error) {
 		return logErrorf(GetStream(), format, args...)
 	}
 	return 0, nil
+}
+
+// Fatalf writes an error message to the current output stream, appending a new
+// line; then it aborts the program by calling os.Exit(1).
+func Fatalf(format string, args ...interface{}) {
+	if IsError() {
+		format, args = prepareFormatAndArgs(ERR, format, args...)
+		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
+			format = format + "\n"
+		}
+		logErrorf(GetStream(), format, args...)
+	}
+	os.Exit(1)
 }
 
 // Println is a raw version of the debug functions; it tries to interpret the
