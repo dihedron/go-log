@@ -55,6 +55,25 @@ const (
 // logging messages.
 //const FunctionWidth int = 32
 
+// LevelFromString returns a log Level value by parsing the user-provided string
+// in a lenient way; if the parsing fails, returns and error.
+func LevelFromString(s string) (Level, error) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "d", "dbg", "debug":
+		return DBG, nil
+	case "i", "inf", "info", "informational":
+		return INF, nil
+	case "w", "wrn", "warn", "warning":
+		return WRN, nil
+	case "e", "err", "error", "f", "fatal":
+		return ERR, nil
+	case "nil", "null", "none":
+		return NUL, nil
+	default:
+		return ERR, fmt.Errorf("unparseable log level: %q", s)
+	}
+}
+
 // String returns a string representation of the log level for use in traces.
 func (l Level) String() string {
 	switch l {
