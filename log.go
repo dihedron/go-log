@@ -20,20 +20,26 @@ import (
 	"github.com/fatih/color"
 )
 
-// Level represents the log level.
-type Level int8
+// LogLevel represents the log level.
+type LogLevel int
 
 const (
-	// DBG is the Level for debug messages.
-	DBG Level = iota
-	// INF is the Level for informational messages.
-	INF
-	// WRN is the Level for warning messages.
-	WRN
-	// ERR is the Level for error messages.
-	ERR
-	// NUL is the Level corresponding to no log output.
-	NUL
+	//TraceLevel is the LogLevel for trace messages
+	TraceLevel LogLevel = iota
+	// DebugLevel is the LogLevel for debug messages.
+	DebugLevel
+	// InfoLevel is the LogLevel for informational messages.
+	InfoLevel
+	// WarnLevel is the LogLevel for warning messages.
+	WarnLevel
+	// ErrorLevel is the LogLevel for error messages.
+	ErrorLevel
+	// FatalLevel is the LogLevel for fatal error messages.
+	FatalLevel
+	// PanicLevel is the LogLevel for fatal error messages that cause a panic.
+	PanicLevel
+	// NoneLevel is the LogLevel corresponding to no log output.
+	NoneLevel
 )
 
 // Flag is used to influence some aspects of the logger's behaviour such as
@@ -56,16 +62,22 @@ const (
 //const FunctionWidth int = 32
 
 // String returns a string representation of the log level for use in traces.
-func (l Level) String() string {
+func (l LogLevel) String() string {
 	switch l {
-	case DBG:
+	case TraceLevel:
+		return "[T]"
+	case DebugLevel:
 		return "[D]"
-	case INF:
+	case InfoLevel:
 		return "[I]"
-	case WRN:
+	case WarnLevel:
 		return "[W]"
-	case ERR:
+	case ErrorLevel:
 		return "[E]"
+	case FatalLevel:
+		return "[F]"
+	case PanicLevel:
+		return "[P]"
 	}
 	return ""
 }
@@ -89,7 +101,7 @@ const (
 )
 
 var (
-	logLevel               Level
+	logLevel               LogLevel
 	logLevelLock           sync.RWMutex
 	logStream              io.Writer
 	logStreamLock          sync.RWMutex
@@ -99,18 +111,24 @@ var (
 	logPrintSourceInfoLock sync.RWMutex
 	logPrintCallerInfo     bool
 	logPrintCallerInfoLock sync.RWMutex
+	logTracef              logf
 	logDebugf              logf
 	logInfof               logf
 	logWarnf               logf
 	logErrorf              logf
+	logFatalf              logf
+	logPanicf              logf
+	logTraceln             logln
 	logDebugln             logln
 	logInfoln              logln
 	logWarnln              logln
 	logErrorln             logln
+	logFatalln             logln
+	logPanicln             logln
 )
 
 func init() {
-	SetLevel(DBG)
+	SetLevel(DebugLevel)
 	SetStream(os.Stderr, true)
 	SetTimeFormat("2006-01-02@15:04:05.000")
 	SetPrintCallerInfo(true)
@@ -118,14 +136,14 @@ func init() {
 }
 
 // SetLevel sets the log level for the application.
-func SetLevel(level Level) {
+func SetLevel(level LogLevel) {
 	logLevelLock.Lock()
 	defer logLevelLock.Unlock()
 	logLevel = level
 }
 
 // GetLevel retur s the current log level.
-func GetLevel() Level {
+func GetLevel() LogLevel {
 	logLevelLock.RLock()
 	defer logLevelLock.RUnlock()
 	return logLevel
@@ -139,24 +157,36 @@ func SetStream(stream io.Writer, colorise bool) {
 	defer logStreamLock.Unlock()
 	if stream, ok := stream.(*os.File); colorise && ok {
 		logStream = colorable.NewColorable(stream)
+		logTracef = color.New(color.FgWhite).Fprintf
 		logDebugf = color.New(color.FgWhite).Fprintf
 		logInfof = color.New(color.FgGreen).Fprintf
 		logWarnf = color.New(color.FgYellow).Fprintf
 		logErrorf = color.New(color.FgRed).Fprintf
+		logFatalf = color.New(color.FgBlue).Fprintf
+		logPanicf = color.New(color.FgMagenta).Fprintf
+		logTraceln = color.New(color.FgWhite).Fprintln
 		logDebugln = color.New(color.FgWhite).Fprintln
 		logInfoln = color.New(color.FgGreen).Fprintln
 		logWarnln = color.New(color.FgYellow).Fprintln
 		logErrorln = color.New(color.FgRed).Fprintln
+		logFatalln = color.New(color.FgBlue).Fprintln
+		logPanicln = color.New(color.FgMagenta).Fprintln
 	} else {
 		logStream = stream
+		logTracef = fmt.Fprintf
 		logDebugf = fmt.Fprintf
 		logInfof = fmt.Fprintf
 		logWarnf = fmt.Fprintf
 		logErrorf = fmt.Fprintf
+		logFatalf = fmt.Fprintf
+		logPanicf = fmt.Fprintf
+		logTraceln = fmt.Fprintln
 		logDebugln = fmt.Fprintln
 		logInfoln = fmt.Fprintln
 		logWarnln = fmt.Fprintln
 		logErrorln = fmt.Fprintln
+		logFatalln = fmt.Fprintln
+		logPanicln = fmt.Fprintln
 	}
 }
 
@@ -217,36 +247,61 @@ func GetPrintSourceInfo() int8 {
 	return logPrintSourceInfo
 }
 
-// IsDebug returns whether the debug (DBG) log elevel is enabled.
+// IsTrace returns whether the trace (TraceLevel) log elevel is enabled.
+func IsTrace() bool {
+	return GetLevel() <= TraceLevel
+}
+
+// IsDebug returns whether the debug (DebugLevel) log elevel is enabled.
 func IsDebug() bool {
-	return GetLevel() <= DBG
+	return GetLevel() <= DebugLevel
 }
 
-// IsInfo returns whether the informational (INF) log elevel is enabled.
+// IsInfo returns whether the informational (InfoLevel) log elevel is enabled.
 func IsInfo() bool {
-	return GetLevel() <= INF
+	return GetLevel() <= InfoLevel
 }
 
-// IsWarning returns whether the warning (WRN) log elevel is enabled.
+// IsWarning returns whether the warning (WarnLevel) log elevel is enabled.
 func IsWarning() bool {
-	return GetLevel() <= WRN
+	return GetLevel() <= WarnLevel
 }
 
-// IsError returns whether the error (ERR) log elevel is enabled.
+// IsError returns whether the error (ErrorLevel) log elevel is enabled.
 func IsError() bool {
-	return GetLevel() <= ERR
+	return GetLevel() <= ErrorLevel
+}
+
+// IsFatal returns whether the fatal (FatalLevel) log elevel is enabled.
+func IsFatal() bool {
+	return GetLevel() <= FatalLevel
+}
+
+// IsPanic returns whether the panic (PanicLevel) log elevel is enabled.
+func IsPanic() bool {
+	return GetLevel() <= PanicLevel
 }
 
 // IsDisabled returns whether the log is disabled.
 func IsDisabled() bool {
-	return GetLevel() <= NUL
+	return GetLevel() <= NoneLevel
+}
+
+// Traceln writes a trace message to the current output stream, appending a new
+// line.
+func Traceln(args ...interface{}) (int, error) {
+	if IsTrace() {
+		args = prepareArgs(DebugLevel, args...)
+		return logTraceln(GetStream(), args...)
+	}
+	return 0, nil
 }
 
 // Debugln writes a debug message to the current output stream, appending a new
 // line.
 func Debugln(args ...interface{}) (int, error) {
 	if IsDebug() {
-		args = prepareArgs(DBG, args...)
+		args = prepareArgs(DebugLevel, args...)
 		return logDebugln(GetStream(), args...)
 	}
 	return 0, nil
@@ -256,7 +311,7 @@ func Debugln(args ...interface{}) (int, error) {
 // appending a new line.
 func Infoln(args ...interface{}) (int, error) {
 	if IsInfo() {
-		args = prepareArgs(INF, args...)
+		args = prepareArgs(InfoLevel, args...)
 		return logInfoln(GetStream(), args...)
 	}
 	return 0, nil
@@ -266,7 +321,7 @@ func Infoln(args ...interface{}) (int, error) {
 // line.
 func Warnln(args ...interface{}) (int, error) {
 	if IsWarning() {
-		args = prepareArgs(WRN, args...)
+		args = prepareArgs(WarnLevel, args...)
 		return logWarnln(GetStream(), args...)
 	}
 	return 0, nil
@@ -276,27 +331,48 @@ func Warnln(args ...interface{}) (int, error) {
 // line.
 func Errorln(args ...interface{}) (int, error) {
 	if IsError() {
-		args = prepareArgs(ERR, args...)
+		args = prepareArgs(ErrorLevel, args...)
 		return logErrorln(GetStream(), args...)
 	}
 	return 0, nil
 }
 
 // Fatalln writes an error message to the current output stream, appending a new
-// line; then it aborts the program by calling os.Exit(1).
-func Fatalln(args ...interface{}) {
-	if IsError() {
-		args = prepareArgs(ERR, args...)
-		logErrorln(GetStream(), args...)
+// line.
+func Fatalln(args ...interface{}) (int, error) {
+	if IsFatal() {
+		args = prepareArgs(FatalLevel, args...)
+		logFatalln(GetStream(), args...)
 	}
-	os.Exit(1)
+	return 0, nil
 }
 
-// Debugf writes a debug message to the current output stream,
-// appending a new line.
+// Panicln writes an error message to the current output stream, appending a new
+// line; then it panics.
+func Panicln(args ...interface{}) (int, error) {
+	if IsPanic() {
+		args = prepareArgs(PanicLevel, args...)
+		logPanicln(GetStream(), args...)
+	}
+	panic("unrecoverable error")
+}
+
+// Tracef writes a trace message to the current output stream, appending a new line.
+func Tracef(format string, args ...interface{}) (int, error) {
+	if IsTrace() {
+		format, args = prepareFormatAndArgs(TraceLevel, format, args...)
+		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
+			format = format + "\n"
+		}
+		return logTracef(GetStream(), format, args...)
+	}
+	return 0, nil
+}
+
+// Debugf writes a debug message to the current output stream, appending a new line.
 func Debugf(format string, args ...interface{}) (int, error) {
 	if IsDebug() {
-		format, args = prepareFormatAndArgs(DBG, format, args...)
+		format, args = prepareFormatAndArgs(DebugLevel, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -309,7 +385,7 @@ func Debugf(format string, args ...interface{}) (int, error) {
 // appending a new line.
 func Infof(format string, args ...interface{}) (int, error) {
 	if IsInfo() {
-		format, args = prepareFormatAndArgs(INF, format, args...)
+		format, args = prepareFormatAndArgs(InfoLevel, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -318,11 +394,10 @@ func Infof(format string, args ...interface{}) (int, error) {
 	return 0, nil
 }
 
-// Warnf writes a warning message to the current output stream,
-// appending a new line.
+// Warnf writes a warning message to the current output stream, appending a new line.
 func Warnf(format string, args ...interface{}) (int, error) {
 	if IsWarning() {
-		format, args = prepareFormatAndArgs(WRN, format, args...)
+		format, args = prepareFormatAndArgs(WarnLevel, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -335,7 +410,7 @@ func Warnf(format string, args ...interface{}) (int, error) {
 // line.
 func Errorf(format string, args ...interface{}) (int, error) {
 	if IsError() {
-		format, args = prepareFormatAndArgs(ERR, format, args...)
+		format, args = prepareFormatAndArgs(ErrorLevel, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
@@ -345,16 +420,29 @@ func Errorf(format string, args ...interface{}) (int, error) {
 }
 
 // Fatalf writes an error message to the current output stream, appending a new
-// line; then it aborts the program by calling os.Exit(1).
-func Fatalf(format string, args ...interface{}) {
-	if IsError() {
-		format, args = prepareFormatAndArgs(ERR, format, args...)
+// line.
+func Fatalf(format string, args ...interface{}) (int, error) {
+	if IsFatal() {
+		format, args = prepareFormatAndArgs(FatalLevel, format, args...)
 		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
 			format = format + "\n"
 		}
-		logErrorf(GetStream(), format, args...)
+		logFatalf(GetStream(), format, args...)
 	}
-	os.Exit(1)
+	return 0, nil
+}
+
+// Panicf writes an error message to the current output stream, appending a new
+// line; then it panics.
+func Panicf(format string, args ...interface{}) (int, error) {
+	if IsPanic() {
+		format, args = prepareFormatAndArgs(PanicLevel, format, args...)
+		if !strings.HasSuffix(format, "\n") && !strings.HasSuffix(format, "\r") {
+			format = format + "\n"
+		}
+		logPanicf(GetStream(), format, args...)
+	}
+	panic("unrecoverable error")
 }
 
 // Println is a raw version of the debug functions; it tries to interpret the
@@ -365,6 +453,8 @@ func Println(args ...interface{}) (int, error) {
 	if len(args) > 0 {
 		if value, ok := args[0].(string); ok {
 			switch {
+			case strings.HasPrefix(value, "[T]"):
+				return Traceln(args[1:]...)
 			case strings.HasPrefix(value, "[D]"):
 				return Debugln(args[1:]...)
 			case strings.HasPrefix(value, "[I]"):
@@ -373,6 +463,10 @@ func Println(args ...interface{}) (int, error) {
 				return Warnln(args[1:]...)
 			case strings.HasPrefix(value, "[E]"):
 				return Errorln(args[1:]...)
+			case strings.HasPrefix(value, "[F]"):
+				return Fatalln(args[1:]...)
+			case strings.HasPrefix(value, "[P]"):
+				return Panicln(args[1:]...)
 			}
 		}
 	}
@@ -384,8 +478,10 @@ func Println(args ...interface{}) (int, error) {
 // delegates to the corresponding logging function, otherwise it just prints to
 // the log stream as is, with no additional formatting.
 func Printf(format string, args ...interface{}) (int, error) {
-	re := regexp.MustCompile(`^\[(D|I|W|E)\]\s`)
+	re := regexp.MustCompile(`^\[(T|D|I|W|E|F|P)\]\s`)
 	switch {
+	case strings.HasPrefix(format, "[T]"):
+		return Tracef(re.ReplaceAllString(format, ""), args...)
 	case strings.HasPrefix(format, "[D]"):
 		return Debugf(re.ReplaceAllString(format, ""), args...)
 	case strings.HasPrefix(format, "[I]"):
@@ -394,6 +490,10 @@ func Printf(format string, args ...interface{}) (int, error) {
 		return Warnf(re.ReplaceAllString(format, ""), args...)
 	case strings.HasPrefix(format, "[E]"):
 		return Errorf(re.ReplaceAllString(format, ""), args...)
+	case strings.HasPrefix(format, "[F]"):
+		return Fatalf(re.ReplaceAllString(format, ""), args...)
+	case strings.HasPrefix(format, "[P]"):
+		return Panicf(re.ReplaceAllString(format, ""), args...)
 	}
 	return fmt.Fprintf(GetStream(), format, args...)
 }
@@ -401,7 +501,7 @@ func Printf(format string, args ...interface{}) (int, error) {
 // prepareFormatAndArgs prepares the format and args array for logf, depending
 // on the active runtime logging options (e.g. caller function, source file and
 // line number).
-func prepareFormatAndArgs(level Level, format string, args ...interface{}) (string, []interface{}) {
+func prepareFormatAndArgs(level LogLevel, format string, args ...interface{}) (string, []interface{}) {
 
 	leadFormat := "%s %s - "
 	tailFormat := ""
@@ -450,7 +550,7 @@ func prepareFormatAndArgs(level Level, format string, args ...interface{}) (stri
 // prepareArgs prepares the aray of args for logln , depending on the active
 // runtime logging options (e.g. caller function, source file and line number);
 // it is similar to prepareFormatAndArgs but logln does not require a format.
-func prepareArgs(level Level, args ...interface{}) []interface{} {
+func prepareArgs(level LogLevel, args ...interface{}) []interface{} {
 
 	list := []interface{}{fmt.Sprintf("%s %s -", level.String(), time.Now().Format(GetTimeFormat()))}
 	if GetPrintCallerInfo() || GetPrintSourceInfo() > 0 {
